@@ -13,10 +13,8 @@ import { S3Client } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
 const app = express();
 
-// Parse JSON request bodies
 app.use(express.json());
 
-// Create S3 client for multer-s3
 const s3Client = new S3Client({ region: AWS_REGION });
 
 const upload = multer({
@@ -27,7 +25,9 @@ const upload = multer({
       // Use documentId from req and preserve file extension
       const documentId = (req as any).documentId;
       const extension = file.originalname.split('.').pop();
-      const keyWithExtension = extension ? `${documentId}.${extension}` : documentId;
+      const keyWithExtension = extension
+        ? `${documentId}.${extension}`
+        : documentId;
       cb(null, keyWithExtension);
     },
     contentType: multerS3.AUTO_CONTENT_TYPE,
@@ -59,7 +59,8 @@ app.get('/api/documents/:id', async (req, res) => {
   }
 });
 
-app.post('/api/documents',
+app.post(
+  '/api/documents',
   // First: Generate documentId and attach to req
   (req, res, next) => {
     (req as any).documentId = randomUUID();
@@ -77,11 +78,14 @@ app.post('/api/documents',
         return res.status(400).json({ error: 'No file uploaded' });
       }
 
-      await appService.createDocument({
-        fileName: file.originalname,
-        size: file.size,
-        mimetype: file.mimetype,
-      }, documentId);
+      await appService.createDocument(
+        {
+          fileName: file.originalname,
+          size: file.size,
+          mimetype: file.mimetype,
+        },
+        documentId
+      );
 
       const result = await appService.fetchDocument(documentId);
 
