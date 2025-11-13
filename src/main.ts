@@ -1,23 +1,97 @@
-import { DB_NAME, MONGODB_CONNECTION_STRING, PORT } from './config/config';
+import {
+  AWS_REGION,
+  PORT,
+  S3_BUCKET_NAME,
+  DYNAMODB_TABLE_NAME,
+} from './config/config';
 import { AppRepository } from './repository/app.repository';
 import { AppService } from './service/app.service';
 import express from 'express';
+import multer from 'multer';
+import multerS3 from 'multer-s3';
+import { S3Client } from '@aws-sdk/client-s3';
 const app = express();
+
+// Parse JSON request bodies
+app.use(express.json());
+
+// Create S3 client for multer-s3
+const s3Client = new S3Client({ region: AWS_REGION });
+
+const upload = multer({
+  storage: multerS3({
+    s3: s3Client,
+    bucket: S3_BUCKET_NAME,
+    key: (req, file, cb) => {
+      // Use original filename as S3 key
+      cb(null, file.originalname);
+    },
+    contentType: multerS3.AUTO_CONTENT_TYPE,
+  }),
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+});
 
 // TODO: Set up real logger (Winston or Pino)
 
-const appRepository = new AppRepository(MONGODB_CONNECTION_STRING, DB_NAME);
+const appRepository = new AppRepository(AWS_REGION, DYNAMODB_TABLE_NAME);
 const appService = new AppService(appRepository);
 
-app.get('/v1/api/bucketconfig/:id', async (req, res) => {
-  const bucketName = req.params.id;
-  const result = await appService.getConfigForBucket(bucketName);
+//TODO: not implemented
+app.get('/api/documents', async (req, res) => {
+  const page = req.query.page;
+  const limit = req.query.limit;
+  const status = req.query.status ?? 'all';
+});
 
-  if (!result) {
-    res.status(404).send('Resource not found');
+app.get('/api/documents/:id', async (req, res) => {
+  const documentId = req.params.id;
+
+  try {
+    const result = await appService.fetchDocument(documentId);
+    res.json(result);
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(404).json({ error: 'Document not found' });
   }
+});
 
-  res.json(result);
+app.post('/api/documents', upload.single('file'), async (req, res) => {
+  try {
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const documentId = await appService.createDocument({
+      fileName: file.originalname,
+      size: file.size,
+      mimetype: file.mimetype,
+    });
+
+    const result = await appService.fetchDocument(documentId);
+
+    res.json(result);
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ error: 'Upload failed' });
+  }
+});
+
+app.patch('/api/documents/:id', async (req, res) => {
+  const documentId = req.params.id;
+  const requestBody = req.body;
+
+  try {
+    const result = await appService.updateDocument(documentId, requestBody);
+    res.json(result);
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error occurred';
+
+    console.error('Update error:', errorMessage);
+    res.status(500).json({ error: errorMessage });
+  }
 });
 
 app.listen(PORT, async () => {
