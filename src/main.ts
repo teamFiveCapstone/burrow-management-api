@@ -36,6 +36,7 @@ const upload = multer({
 const appRepository = new AppRepository(AWS_REGION, DYNAMODB_TABLE_NAME);
 const appService = new AppService(appRepository);
 
+//TODO: not implemented
 app.get('/api/documents', async (req, res) => {
   const page = req.query.page;
   const limit = req.query.limit;
