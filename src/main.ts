@@ -12,6 +12,9 @@ import multerS3 from 'multer-s3';
 import { S3Client } from '@aws-sdk/client-s3';
 const app = express();
 
+// Parse JSON request bodies
+app.use(express.json());
+
 // Create S3 client for multer-s3
 const s3Client = new S3Client({ region: AWS_REGION });
 
@@ -33,6 +36,24 @@ const upload = multer({
 const appRepository = new AppRepository(AWS_REGION, DYNAMODB_TABLE_NAME);
 const appService = new AppService(appRepository);
 
+app.get('/api/documents', async (req, res) => {
+  const page = req.query.page;
+  const limit = req.query.limit;
+  const status = req.query.status ?? 'all';
+});
+
+app.get('/api/documents/:id', async (req, res) => {
+  const documentId = req.params.id;
+
+  try {
+    const result = await appService.fetchDocument(documentId);
+    res.json(result);
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(404).json({ error: 'Document not found' });
+  }
+});
+
 app.post('/api/documents', upload.single('file'), async (req, res) => {
   try {
     const file = req.file;
@@ -53,6 +74,22 @@ app.post('/api/documents', upload.single('file'), async (req, res) => {
   } catch (error) {
     console.error('Upload error:', error);
     res.status(500).json({ error: 'Upload failed' });
+  }
+});
+
+app.patch('/api/documents/:id', async (req, res) => {
+  const documentId = req.params.id;
+  const requestBody = req.body;
+
+  try {
+    const result = await appService.updateDocument(documentId, requestBody);
+    res.json(result);
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error occurred';
+
+    console.error('Update error:', errorMessage);
+    res.status(500).json({ error: errorMessage });
   }
 });
 

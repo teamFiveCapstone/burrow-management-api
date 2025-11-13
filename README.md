@@ -25,6 +25,15 @@ aws dynamodb create-table \
   --table-class STANDARD
 ```
 
+Add a GSI for querying by status
+
+```
+  --global-secondary-indexes \
+      IndexName=StatusIndex,\
+      KeySchema=[{AttributeName=status,KeyType=HASH}],\
+      Projection={ProjectionType=ALL}
+```
+
 ## How to Run
 
 1. `cp .env.example .env` (and edit if necessary)

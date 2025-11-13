@@ -3,6 +3,7 @@ import {
   DynamoDBDocumentClient,
   GetCommand,
   PutCommand,
+  UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { DocumentData, DocumentStatus } from '../service/types';
 
@@ -46,20 +47,45 @@ export class AppRepository {
     return documentId;
   }
 
-  async fetchDocument(docuemntId: string): Promise<DocumentData> {
+  async fetchDocument(documentId: string): Promise<DocumentData> {
     const command = new GetCommand({
       TableName: this.tableName,
       Key: {
-        documentId: docuemntId,
+        documentId: documentId,
       },
     });
 
     const response = await this.docClient.send(command);
-    
+
     if (response.$metadata.httpStatusCode !== 200) {
-      throw new Error(`failed to fetch document: ${docuemntId}`)
+      throw new Error(`failed to fetch document: ${documentId}`);
     }
 
     return response.Item as DocumentData;
+  }
+
+  async updateDocument(documentId: string, requestBody: { status: string }) {
+    const command = new UpdateCommand({
+      TableName: this.tableName,
+      Key: {
+        documentId: documentId,
+      },
+      UpdateExpression: 'set #status = :status', // only need the # here because status is a reserved keyword for dynamodb
+      ExpressionAttributeNames: {
+        '#status': 'status',
+      },
+      ExpressionAttributeValues: {
+        ':status': requestBody.status,
+      },
+      ReturnValues: 'ALL_NEW',
+    });
+
+    const response = await this.docClient.send(command);
+
+    if (response.$metadata.httpStatusCode !== 200) {
+      throw new Error(`Failed to update document: ${documentId}`);
+    }
+
+    return response.Attributes as DocumentData;
   }
 }
