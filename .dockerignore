@@ -1,0 +1,57 @@
+# Dependency directories
+node_modules/
+
+# TypeScript source files (will be compiled inside Docker)
+# Don't ignore src/ since we need it for compilation
+
+# Build output (will be generated inside Docker)
+dist/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Git files
+.git/
+.gitignore
+
+# Documentation
+README.md
+*.md
+
+# Docker files
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# Dependency cache
+.npm/
+
+# Optional eslint cache
+.eslintcache
+
+# Build files that shouldn't be copied
+tsconfig.tsbuildinfo

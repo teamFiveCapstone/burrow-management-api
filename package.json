@@ -1,6 +1,7 @@
 {
   "scripts": {
     "dev": "ts-node src/main.ts",
+    "dev:watch": "nodemon --exec ts-node src/main.ts",
     "build": "tsc",
     "start": "npm run build && node dist/main.js"
   },
