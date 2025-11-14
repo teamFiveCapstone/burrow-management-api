@@ -15,7 +15,10 @@ export class AppService {
   ) {
     console.log(`Creating document record: ${documentData.fileName}`);
 
-    const result = await this.appRepository.createDocument(documentData, documentId);
+    const result = await this.appRepository.createDocument(
+      documentData,
+      documentId
+    );
     return result;
   }
 
@@ -25,9 +28,17 @@ export class AppService {
     return document;
   }
 
+  async fetchAllDocuments(page: number, limit: number, status: string) {
+    const documents = await this.appRepository.fetchAllDocuments(page, limit, status);
+    return documents;
+  }
+
   // TODO: fix type for requestBody, need new Document type with only a status property
   async updateDocument(documentId: string, requestBody: { status: '' }) {
-    const document = await this.appRepository.updateDocument(documentId, requestBody);
+    const document = await this.appRepository.updateDocument(
+      documentId,
+      requestBody
+    );
 
     return document;
   }
