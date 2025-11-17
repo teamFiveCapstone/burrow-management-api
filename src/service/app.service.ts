@@ -2,6 +2,8 @@ import { PutCommandOutput } from '@aws-sdk/lib-dynamodb';
 import { AppRepository } from '../repository/app.repository';
 import { DocumentData } from './types';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import { JWT_SECRET } from '../config/config';
 
 export class AppService {
   private appRepository: AppRepository;
@@ -66,6 +68,58 @@ export class AppService {
       await this.appRepository.createAdminUser(hashedPassword);
     } catch (error) {
       console.error('Failed to create admin user:', error);
+    }
+  }
+
+  async authenticateUser(
+    password: string,
+    passwordHash: string
+  ): Promise<boolean> {
+    try {
+      return await bcrypt.compare(password, passwordHash);
+    } catch (error) {
+      // If bcrypt.compare throws (e.g., malformed hash), treat as authentication failure
+      console.error('Error during password comparison:', error);
+      return false;
+    }
+  }
+
+  async login(userName: string, password: string): Promise<string | null> {
+    try {
+      const user = await this.fetchAdminUser();
+
+      if (!user) {
+        return null;
+      }
+
+      const username = user.userName;
+      const passwordHash = user.password;
+
+      if (username !== userName) {
+        return null;
+      }
+
+      const authenticated = await this.authenticateUser(password, passwordHash);
+      if (!authenticated) {
+        return null;
+      }
+
+      if (!JWT_SECRET) {
+        throw new Error('JWT_SECRET is not configured');
+      }
+
+      const token = jwt.sign(
+        {
+          userName: username,
+        },
+        JWT_SECRET,
+        { expiresIn: '1h' }
+      );
+
+      return token;
+    } catch (error) {
+      console.error('Error during login:', error);
+      return null;
     }
   }
 }

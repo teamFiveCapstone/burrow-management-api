@@ -12,8 +12,6 @@ import multer from 'multer';
 import multerS3 from 'multer-s3';
 import { S3Client } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
 import { authenticateMiddleware } from './middleware/authentication-middleware';
 
 const app = express();
@@ -56,27 +54,26 @@ app.get('/health', (req, res) => {
 });
 
 app.post('/api/login', async (req, res) => {
-  const user = await appService.fetchAdminUser();
-  const passwordHash = user['password'];
+  try {
+    const { userName, password } = req.body;
 
-  const authenticated = await bcrypt.compare(req.body.password, passwordHash);
+    if (!userName || !password) {
+      return res
+        .status(400)
+        .json({ error: 'Username and password are required' });
+    }
 
-  if (!authenticated) {
-    res.status(403).send();
-    return;
+    const result = await appService.login(userName, password);
+
+    if (!result) {
+      return res.status(403).json({ error: 'Invalid credentials' });
+    }
+
+    res.json({ jwt: result });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
-  const jwtSecret = process.env.JWT_SECRET;
-  if (!jwtSecret) {
-    throw new Error('no jwt secret');
-  }
-  const token = jwt.sign(
-    {
-      userName: 'admin',
-    },
-    jwtSecret,
-    { expiresIn: '1h' }
-  );
-  res.json({ jwt: token });
 });
 
 app.get('/api/documents', async (req, res) => {
