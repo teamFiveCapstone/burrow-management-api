@@ -3,6 +3,7 @@ import {
   PORT,
   S3_BUCKET_NAME,
   DYNAMODB_TABLE_NAME,
+  DYNAMODB_TABLE_USERS,
 } from './config/config';
 import { AppRepository } from './repository/app.repository';
 import { AppService } from './service/app.service';
@@ -11,9 +12,13 @@ import multer from 'multer';
 import multerS3 from 'multer-s3';
 import { S3Client } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
+import { authenticateMiddleware } from './middleware/authentication-middleware';
+
 const app = express();
 
 app.use(express.json());
+app.use(authenticateMiddleware);
+app.use(express.urlencoded({ extended: true }));
 
 const s3Client = new S3Client({ region: AWS_REGION });
 
@@ -37,11 +42,38 @@ const upload = multer({
 
 // TODO: Set up real logger (Winston or Pino)
 
-const appRepository = new AppRepository(AWS_REGION, DYNAMODB_TABLE_NAME);
+const appRepository = new AppRepository(
+  AWS_REGION,
+  DYNAMODB_TABLE_NAME,
+  DYNAMODB_TABLE_USERS
+);
 const appService = new AppService(appRepository);
 
 app.get('/health', (req, res) => {
   res.status(200).send('ok');
+});
+
+app.post('/api/login', async (req, res) => {
+  try {
+    const { userName, password } = req.body;
+
+    if (!userName || !password) {
+      return res
+        .status(400)
+        .json({ error: 'Username and password are required' });
+    }
+
+    const result = await appService.login(userName, password);
+
+    if (!result) {
+      return res.status(403).json({ error: 'Invalid credentials' });
+    }
+
+    res.json({ jwt: result });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 app.get('/api/documents', async (req, res) => {
@@ -135,5 +167,6 @@ app.patch('/api/documents/:id', async (req, res) => {
 
 app.listen(PORT, async () => {
   await appRepository.connect();
+  await appService.createAdminUser();
   console.log('Listening to port 3000.');
 });
