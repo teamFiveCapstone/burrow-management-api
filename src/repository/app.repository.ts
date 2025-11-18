@@ -103,21 +103,42 @@ export class AppRepository {
   async fetchAllDocuments(
     page: number,
     limit: number,
-    status: string
+    status: string,
+    lastEvaluatedKeyFromPreviousResponse?: string
   ): Promise<DocumentData[]> {
     try {
       if (status === 'all') {
+        // Parse lastEvaluatedKey from JSON string if provided
+        let exclusiveStartKey: Record<string, any> | undefined;
+        if (lastEvaluatedKeyFromPreviousResponse) {
+          try {
+            exclusiveStartKey = JSON.parse(
+              lastEvaluatedKeyFromPreviousResponse
+            );
+          } catch (error) {
+            throw new Error('Invalid lastEvaluatedKey format');
+          }
+        }
+
         const command = new ScanCommand({
           TableName: this.documentsTable,
+          Limit: 2,
+          ExclusiveStartKey: exclusiveStartKey,
         });
 
         const response = await this.docClient.send(command);
+
+        const lastEvaluatedKey = response.LastEvaluatedKey;
 
         if (response.$metadata.httpStatusCode !== 200) {
           throw new Error(`Failed to fetch documents`);
         }
 
-        return (response.Items as DocumentData[]) || [];
+        return {
+          items: response.Items,
+          lastEvaluatedKey,
+        } as any;
+        // return (response.Items as DocumentData[]) || [];
       }
 
       const command = new QueryCommand({

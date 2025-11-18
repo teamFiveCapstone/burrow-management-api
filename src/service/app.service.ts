@@ -31,11 +31,17 @@ export class AppService {
     return document;
   }
 
-  async fetchAllDocuments(page: number, limit: number, status: string) {
+  async fetchAllDocuments(
+    page: number,
+    limit: number,
+    status: string,
+    lastEvaluatedKeyFromPreviousResponse?: string
+  ) {
     const documents = await this.appRepository.fetchAllDocuments(
       page,
       limit,
-      status
+      status,
+      lastEvaluatedKeyFromPreviousResponse
     );
     return documents;
   }
@@ -78,7 +84,6 @@ export class AppService {
     try {
       return await bcrypt.compare(password, passwordHash);
     } catch (error) {
-      // If bcrypt.compare throws (e.g., malformed hash), treat as authentication failure
       console.error('Error during password comparison:', error);
       return false;
     }
