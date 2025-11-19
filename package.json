@@ -3,7 +3,12 @@
     "dev": "ts-node src/main.ts",
     "dev:watch": "nodemon --exec ts-node src/main.ts",
     "build": "tsc",
-    "start": "npm run build && node dist/main.js"
+    "start": "npm run build && node dist/main.js",
+    "docker:build": "docker build -t ragline-backend .",
+    "docker:tag": "docker tag ragline-backend 908860991626.dkr.ecr.us-east-1.amazonaws.com/ragline-backend:latest",
+    "docker:push": "docker push 908860991626.dkr.ecr.us-east-1.amazonaws.com/ragline-backend:latest",
+    "docker:update": "npm run docker:build && npm run docker:tag && npm run docker:push",
+    "ecs:redeploy": "aws ecs update-service --cluster hello-world-rag-line --service backend-api-service-k6xoz52j --force-new-deployment --no-cli-pager"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.930.0",

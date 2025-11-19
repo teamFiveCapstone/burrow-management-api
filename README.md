@@ -380,22 +380,15 @@ aws dynamodb create-table \
 
 ## How to Build Container and Push to ECR
 
-1. Build the Docker image:
+```bash
+npm run docker:update
+```
 
-   ```bash
-   docker build -t ragline-backend .
-   ```
+To redeploy the ECS with the container iamge you just pushed, run:
 
-2. Tag the image:
-
-   ```bash
-   docker tag ragline-backend:latest 908860991626.dkr.ecr.us-east-1.amazonaws.com/ragline-backend:latest
-   ```
-
-3. Push to ECR:
-   ```bash
-   docker push 908860991626.dkr.ecr.us-east-1.amazonaws.com/ragline-backend:latest
-   ```
+```bash
+npm run ecs:redeploy
+```
 
 ## Document Status Flow
 
