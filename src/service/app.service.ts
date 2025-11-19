@@ -32,14 +32,13 @@ export class AppService {
   }
 
   async fetchAllDocuments(
-    page: number,
-    limit: number,
     status: string,
     lastEvaluatedKeyFromPreviousResponse?: string
-  ) {
+  ): Promise<{
+    items: DocumentData[];
+    lastEvaluatedKey?: Record<string, any>;
+  }> {
     const documents = await this.appRepository.fetchAllDocuments(
-      page,
-      limit,
       status,
       lastEvaluatedKeyFromPreviousResponse
     );

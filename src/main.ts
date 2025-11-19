@@ -77,13 +77,8 @@ app.post('/api/login', async (req, res) => {
 });
 
 app.get('/api/documents', async (req, res) => {
-  const PAGE_NUMBER = 1;
-  const LIMIT = 10;
   const STATUS = 'all';
 
-  const page =
-    typeof req.query.page === 'string' ? +req.query.page : PAGE_NUMBER;
-  const limit = typeof req.query.limit === 'string' ? +req.query.limit : LIMIT;
   const status =
     typeof req.query.status === 'string'
       ? req.query.status.toLowerCase()
@@ -96,13 +91,7 @@ app.get('/api/documents', async (req, res) => {
       : undefined;
 
   try {
-    const results = await appService.fetchAllDocuments(
-      page,
-      limit,
-      status,
-      lastEvaluated
-    ); // array of documents
-    console.log(results);
+    const results = await appService.fetchAllDocuments(status, lastEvaluated);
     res.json(results);
   } catch (error) {
     console.error('Upload error:', error);
