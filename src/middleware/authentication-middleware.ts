@@ -15,12 +15,16 @@ export const authenticateMiddleware = (
 
   const apiToken = req.headers['x-api-token'];
   if (INGESTION_API_TOKEN === apiToken) {
+    console.log('request successfully authenticated via api token');
     return next();
   }
 
   const authHeader = req.headers['authorization'];
 
   if (!authHeader) {
+    console.log(
+      'invalid x-api-token or missing auth header, rejecting request'
+    );
     return res.status(403).send();
   }
 
@@ -35,8 +39,10 @@ export const authenticateMiddleware = (
     const decoded = jwt.verify(token, jwtSecret);
     // check if the user exists?
   } catch (error) {
+    console.log('invalid jwt supplied in auth header, rejecting request');
     return res.status(403).send();
   }
 
+  console.log('request successfully authentciated via jwt');
   next();
 };
