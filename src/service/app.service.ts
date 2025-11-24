@@ -113,7 +113,7 @@ export class AppService {
           userName: username,
         },
         JWT_SECRET,
-        { expiresIn: '1h' }
+        { expiresIn: '2h' }
       );
 
       return token;
