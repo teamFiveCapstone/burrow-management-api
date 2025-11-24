@@ -36,7 +36,13 @@ export const authenticateMiddleware = (
   }
 
   try {
-    const decoded = jwt.verify(token, jwtSecret);
+    const decoded = jwt.verify(token, jwtSecret, (err, decoded) => {
+      if (err) {
+        if (err.name === 'TokenExpiredError') {
+          return res.status(403).send('Please log again. JWT expired.');
+        }
+      }
+    });
     // check if the user exists?
   } catch (error) {
     console.log('invalid jwt supplied in auth header, rejecting request');
