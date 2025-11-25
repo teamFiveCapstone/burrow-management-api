@@ -14,11 +14,50 @@ import { S3Client } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
 import { authenticateMiddleware } from './middleware/authentication-middleware';
 
-const app = express();
+//ZACH Added Type import for SSE
+import type { DocumentData } from './service/types';
 
-app.use(express.json());
+//ZACH ADDED Active SSE connections
+const sseClients: express.Response[] = [];
+
+//ZACH ADDED Function used to push updated document data to all connected clients
+function broadcastDocumentUpdate(document: DocumentData) {
+  //For debugging
+  console.log('Broadcasting SSE update to', sseClients.length, 'clients');
+  console.log(document);
+
+  const data = `data: ${JSON.stringify(document)}\n\n`;
+  sseClients.forEach((res) => res.write(data));
+}
+
+const app = express();
 app.use(authenticateMiddleware);
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.get('/api/events', (req, res) => {
+  console.log('SSE client connected');
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
+  res.write(': connected\n\n');
+
+  const heartbeat = setInterval(() => {
+    res.write(': heartbeat\n\n');
+  }, 15000);
+
+  sseClients.push(res);
+
+  req.on('close', () => {
+    console.log('SSE client disconnected');
+    clearInterval(heartbeat);
+
+    const index = sseClients.indexOf(res);
+    if (index !== -1) sseClients.splice(index, 1);
+  });
+});
 
 const s3Client = new S3Client({ region: AWS_REGION });
 
@@ -155,6 +194,10 @@ app.patch('/api/documents/:id', async (req, res) => {
 
   try {
     const result = await appService.updateDocument(documentId, requestBody);
+
+    //ZACH ADDED SSE Update
+    broadcastDocumentUpdate(result);
+
     res.json(result);
   } catch (error) {
     const errorMessage =
