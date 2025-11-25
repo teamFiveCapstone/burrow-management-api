@@ -400,3 +400,13 @@ Documents progress through the following statuses:
 4. **failed** - Document processing failed
 
 Use the `PATCH /api/documents/:id` endpoint to update document status.
+
+#Zach added for testing
+
+```
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 908860991626.dkr.ecr.us-east-1.amazonaws.com/sse-management-api
+```
+
+```
+docker buildx build -t 908860991626.dkr.ecr.us-east-1.amazonaws.com/sse-management-api . --push
+```
