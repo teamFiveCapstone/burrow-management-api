@@ -17,7 +17,7 @@ import { authenticateMiddleware } from './middleware/authentication-middleware';
 const app = express();
 
 app.use(express.json());
-// app.use(authenticateMiddleware);
+app.use(authenticateMiddleware);
 app.use(express.urlencoded({ extended: true }));
 
 const s3Client = new S3Client({ region: AWS_REGION });
@@ -85,13 +85,16 @@ app.get('/api/documents', async (req, res) => {
       : STATUS;
 
   // Get lastEvaluated from query param, or use undefined if not provided
-  const lastEvaluated =
-    typeof req.query.lastEvaluated === 'string'
-      ? req.query.lastEvaluated
+  const lastEvaluatedKey =
+    typeof req.query.lastEvaluatedKey === 'string'
+      ? req.query.lastEvaluatedKey
       : undefined;
 
   try {
-    const results = await appService.fetchAllDocuments(status, lastEvaluated);
+    const results = await appService.fetchAllDocuments(
+      status,
+      lastEvaluatedKey
+    );
     res.json(results);
   } catch (error) {
     console.error('Upload error:', error);

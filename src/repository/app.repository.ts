@@ -14,7 +14,7 @@ export class AppRepository {
   private docClient: DynamoDBDocumentClient;
   private documentsTable: string;
   private usersTable: string;
-  private readonly DEFAULT_LIMIT = 5;
+  private readonly DEFAULT_LIMIT = 10;
 
   constructor(region: string, documentsTable: string, usersTable: string) {
     this.client = new DynamoDBClient({ region });
