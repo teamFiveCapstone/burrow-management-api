@@ -45,8 +45,7 @@ export class AppService {
     return documents;
   }
 
-  // TODO: fix type for requestBody, need new Document type with only a status property
-  async updateDocument(documentId: string, requestBody: { status: '' }) {
+  async updateDocument(documentId: string, requestBody: { status: string }) {
     const document = await this.appRepository.updateDocument(
       documentId,
       requestBody
