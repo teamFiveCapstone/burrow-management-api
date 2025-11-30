@@ -55,6 +55,10 @@ export class AppService {
     return document;
   }
 
+  async finalizeDocumentDeletion(documentId: string) {
+    await this.appRepository.deleteDocument(documentId);
+  }
+
   async fetchAdminUser() {
     return await this.appRepository.getAdminUser();
   }
