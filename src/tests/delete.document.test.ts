@@ -16,8 +16,6 @@ beforeAll(async () => {
 });
 
 test('should delete a document successfully', async () => {
-  const documentId = 'test-doc-id';
-
   await appService.createDocument(
     { fileName: 'Lion', size: 50, mimetype: 'pdf', createdAt: '12-3-2025' },
     '18903458904'
@@ -30,7 +28,7 @@ test('should delete a document successfully', async () => {
     .delete(`/api/documents/18903458904`)
     .set('x-api-token', INGESTION_API_TOKEN);
 
-  const updatedDoc = await appService.fetchDocument(documentId);
+  const updatedDoc = await appService.fetchDocument('18903458904');
 
   expect(updatedDoc.status).toBe('deleting');
 });
