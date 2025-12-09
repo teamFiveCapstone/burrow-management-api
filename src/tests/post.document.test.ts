@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client } from '@aws-sdk/client-s3';
 import { beforeAll, expect, test } from 'vitest';
 import request from 'supertest';
 import { app, appService } from '../main.ts';
@@ -10,21 +10,12 @@ beforeAll(async () => {
   mockClient(S3Client);
 });
 
-const mockFile = {
-  fieldname: 'file',
-  originalname: 'test.pdf',
-  encoding: '7bit',
-  mimetype: 'pdf',
-  buffer: Buffer.from('test data'),
-  size: 1024,
-};
-
 test('should upload a file succesfully', async () => {
   const mockFileBuffer = Buffer.from('this is a test file content');
 
   const { status, body } = await request(app)
     .post('/api/documents')
-    .attach('file', mockFileBuffer, 'test-file.txt') // Field name, buffer, filename
+    .attach('file', mockFileBuffer, 'test-file.txt')
     .set('x-api-token', INGESTION_API_TOKEN);
   expect(status).toBe(201);
 
