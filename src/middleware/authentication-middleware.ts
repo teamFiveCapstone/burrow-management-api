@@ -8,7 +8,7 @@ export const authenticateMiddleware = (
   res: Response,
   next: NextFunction
 ) => {
-  const publicRoutes = ['/api/login', '/health'];
+  const publicRoutes = ['/api/login', '/health', 'api/docs'];
 
   if (publicRoutes.includes(req.path)) {
     logger.info('Skipping auth for public route', {
