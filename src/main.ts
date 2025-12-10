@@ -249,6 +249,7 @@ app.post('/api/login', async (req, res) => {
  *   get:
  *     summary: Retrieve a list of documents
  *     description: Fetches all documents with optional filtering by status and pagination support
+ *     tags: [Documents]
  *     security:
  *       - ApiKeyAuth: []
  *     parameters:
@@ -329,6 +330,7 @@ app.get('/api/documents', async (req, res) => {
  *   get:
  *     summary: Get a specific document by ID
  *     description: Retrieves information about a single document
+ *     tags: [Documents]
  *     security:
  *       - ApiKeyAuth: []
  *     parameters:
@@ -383,6 +385,7 @@ app.get('/api/documents/:id', async (req, res) => {
  *   post:
  *     summary: Upload a new document
  *     description: Uploads a new document
+ *     tags: [Documents]
  *     security:
  *       - ApiKeyAuth: []
  *     requestBody:
@@ -499,6 +502,7 @@ app.patch('/api/documents/:id', async (req, res) => {
  *   delete:
  *     summary: Delete a document
  *     description: Initiates document deletion process
+ *     tags: [Documents]
  *     security:
  *       - ApiKeyAuth: []
  *     parameters:
