@@ -447,10 +447,11 @@ app.patch('/api/documents/:id', async (req, res) => {
       await s3Repo.copyObject(s3Key, `deleted/${s3Key}`);
       await s3Repo.deleteDocument(s3Key);
 
-      const purgeAt = Math.floor(Date.now() / 1000) + 90 * 24 * 60 * 60;
+      const now = Math.floor(Date.now() / 1000);
+      const purgeAt = now + 90 * 24 * 60 * 60;
       const result = await appService.updateDocument(documentId, {
-        ...requestBody,
-        deletedAt: Date.now(),
+        status: DocumentStatus.DELETED,
+        deletedAt: now,
         purgeAt,
       });
 
@@ -459,7 +460,9 @@ app.patch('/api/documents/:id', async (req, res) => {
       return res.json(result);
     }
 
-    const result = await appService.updateDocument(documentId, requestBody);
+    const result = await appService.updateDocument(documentId, {
+      status: requestBody.status,
+    });
 
     logger.info('Updated document', { documentId, status: result.status });
 

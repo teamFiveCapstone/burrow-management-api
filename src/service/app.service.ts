@@ -56,16 +56,16 @@ export class AppService {
 
   async updateDocument(
     documentId: string,
-    requestBody: { status: string }
+    updates: { status: string; purgeAt?: number; deletedAt?: number }
   ): Promise<DocumentData> {
     logger.info('Updating document', {
       documentId,
-      newStatus: requestBody.status,
+      newStatus: updates.status,
     });
 
     const document = await this.appRepository.updateDocument(
       documentId,
-      requestBody
+      updates
     );
 
     return document;
