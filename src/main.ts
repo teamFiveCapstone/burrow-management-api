@@ -36,7 +36,7 @@ const openapiSpecification = swaggerJsdoc(options);
 
 // 1. DocumentData schema - matches your TypeScript interface with all properties
 // 2. Error schema - for error responses
-// 3. ApiKeyAuth security scheme - defines the x-api-token header authentication
+// 3. BearerAuth security scheme - defines JWT Bearer token authentication
 /**
  * @openapi
  * components:
@@ -63,10 +63,10 @@ const openapiSpecification = swaggerJsdoc(options);
  *         error:
  *           type: string
  *   securitySchemes:
- *     ApiKeyAuth:
- *       type: apiKey
- *       in: header
- *       name: x-api-token
+ *     BearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
  */
 
 const sseClients: express.Response[] = [];
@@ -176,6 +176,59 @@ app.get('/health', (req, res) => {
   res.status(200).send('ok');
 });
 
+/**
+ * @openapi
+ * /api/login:
+ *   post:
+ *     summary: User authentication
+ *     description: Authenticate user credentials and receive a JWT token
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               userName:
+ *                 type: string
+ *                 description: User's username
+ *               password:
+ *                 type: string
+ *                 description: User's password
+ *             required:
+ *               - userName
+ *               - password
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 jwt:
+ *                   type: string
+ *                   description: JWT authentication token
+ *       400:
+ *         description: Bad request - Missing username or password
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Forbidden - Invalid credentials
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 app.post('/api/login', async (req, res) => {
   try {
     const { userName, password } = req.body;
@@ -209,7 +262,7 @@ app.post('/api/login', async (req, res) => {
  *     description: Fetches all documents with optional filtering by status and pagination support
  *     tags: [Documents]
  *     security:
- *       - ApiKeyAuth: []
+ *       - BearerAuth: []
  *     parameters:
  *       - in: query
  *         name: status
@@ -290,7 +343,7 @@ app.get('/api/documents', async (req, res) => {
  *     description: Retrieves information about a single document
  *     tags: [Documents]
  *     security:
- *       - ApiKeyAuth: []
+ *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -345,7 +398,7 @@ app.get('/api/documents/:id', async (req, res) => {
  *     description: Uploads a new document
  *     tags: [Documents]
  *     security:
- *       - ApiKeyAuth: []
+ *       - BearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -491,7 +544,7 @@ app.patch('/api/documents/:id', async (req, res) => {
  *     description: Initiates document deletion process
  *     tags: [Documents]
  *     security:
- *       - ApiKeyAuth: []
+ *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
