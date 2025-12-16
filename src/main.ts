@@ -69,11 +69,8 @@ const openapiSpecification = swaggerJsdoc(options);
  *       name: x-api-token
  */
 
-// Random globally scoped variables (i.e. code smell, can this be a property on some class? or on the app object?)
 const sseClients: express.Response[] = [];
-let cleanupInterval: NodeJS.Timeout | null = null;
 
-// Random function (i.e. code smell, can this be a method on the service?)
 function broadcastDocumentUpdate(document: DocumentData) {
   logger.info('Broadcasting SSE document update', {
     clientCount: sseClients.length,
@@ -83,45 +80,6 @@ function broadcastDocumentUpdate(document: DocumentData) {
 
   const data = `data: ${JSON.stringify(document)}\n\n`;
   sseClients.forEach((res) => res.write(data));
-}
-
-async function cleanupDeletedDocuments() {
-  logger.info('[Cleanup] Checking for documents to finalize...');
-  try {
-    const deleted = await appService.fetchAllDocuments(DocumentStatus.DELETED);
-    const deleting = await appService.fetchAllDocuments(
-      DocumentStatus.DELETING
-    );
-
-    logger.info('[Cleanup] Status', {
-      deletedCount: deleted.items.length,
-      deletingCount: deleting.items.length,
-    });
-
-    for (const doc of deleted.items) {
-      try {
-        await appService.finalizeDocumentDeletion(doc.documentId);
-        logger.info('[Cleanup] Finalized document', {
-          documentId: doc.documentId,
-        });
-      } catch (error) {
-        logger.error('[Cleanup] Failed to finalize document', {
-          documentId: doc.documentId,
-          error,
-        });
-      }
-    }
-
-    if (deleted.items.length === 0 && deleting.items.length === 0) {
-      if (cleanupInterval) {
-        clearInterval(cleanupInterval);
-        cleanupInterval = null;
-        logger.info('[Cleanup] No pending deletes, stopping interval');
-      }
-    }
-  } catch (error) {
-    logger.error('[Cleanup] Error while checking documents', { error });
-  }
 }
 
 // App dependencies
@@ -475,6 +433,32 @@ app.patch('/api/documents/:id', async (req, res) => {
   const requestBody = req.body;
 
   try {
+    if (requestBody.status === DocumentStatus.DELETED) {
+      const document = await appService.fetchDocument(documentId);
+      if (!document) {
+        return res.status(404).json({ error: 'Document not found' });
+      }
+
+      const extension = document.fileName.split('.').pop();
+      const s3Key = extension ? `${documentId}.${extension}` : documentId;
+
+      const s3Repo = new S3Repository(AWS_REGION, S3_BUCKET_NAME);
+      await s3Repo.connect();
+      await s3Repo.copyObject(s3Key, `deleted/${s3Key}`);
+      await s3Repo.deleteDocument(s3Key);
+
+      const purgeAt = Math.floor(Date.now() / 1000) + 90 * 24 * 60 * 60;
+      const result = await appService.updateDocument(documentId, {
+        ...requestBody,
+        deletedAt: Date.now(),
+        purgeAt,
+      });
+
+      logger.info('Document moved to trash', { documentId, s3Key, purgeAt });
+      broadcastDocumentUpdate(result);
+      return res.json(result);
+    }
+
     const result = await appService.updateDocument(documentId, requestBody);
 
     logger.info('Updated document', { documentId, status: result.status });
@@ -577,7 +561,11 @@ app.delete('/api/documents/:id', async (req, res) => {
     await s3Repo.connect();
     const extension = document.fileName.split('.').pop();
     const s3Key = extension ? `${documentId}.${extension}` : documentId;
-    await s3Repo.deleteDocument(s3Key);
+
+    await s3Repo.tagObject(s3Key, {
+      deletion_status: 'deleting',
+      deletion_requested_at: new Date().toISOString(),
+    });
 
     const updatedDoc = await appService.updateDocument(documentId, {
       status: DocumentStatus.DELETING,
@@ -590,11 +578,6 @@ app.delete('/api/documents/:id', async (req, res) => {
     });
 
     broadcastDocumentUpdate(updatedDoc);
-
-    if (!cleanupInterval) {
-      cleanupInterval = setInterval(cleanupDeletedDocuments, 10000);
-      logger.info('[Cleanup] Started (10s interval)');
-    }
 
     res.status(202).json({
       message: 'Delete initiated',

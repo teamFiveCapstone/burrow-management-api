@@ -164,7 +164,9 @@ export class AppRepository {
     }
 
     const fetchLimit = this.DEFAULT_LIMIT * 10;
-    const allStatuses = Object.values(DocumentStatus);
+    const allStatuses = Object.values(DocumentStatus).filter(
+      (status) => status !== DocumentStatus.DELETED
+    );
 
     const queryPromises = allStatuses.map((statusValue) => {
       const exclusiveStartKey = cursor.lastEvaluatedKeys?.[statusValue];
