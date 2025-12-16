@@ -2,6 +2,8 @@ import {
   S3Client,
   PutObjectCommand,
   DeleteObjectCommand,
+  CopyObjectCommand,
+  PutObjectTaggingCommand,
 } from '@aws-sdk/client-s3';
 import logger from '../logger';
 
@@ -95,5 +97,37 @@ export class S3Repository {
     });
 
     return { key, deleted: true, versionId: result.VersionId };
+  }
+
+  async copyObject(sourceKey: string, destKey: string) {
+    logger.info('Copying S3 object', { sourceKey, destKey });
+
+    await this.client.send(
+      new CopyObjectCommand({
+        Bucket: this.bucketName,
+        CopySource: `${this.bucketName}/${sourceKey}`,
+        Key: destKey,
+        TaggingDirective: 'COPY',
+        MetadataDirective: 'COPY',
+      })
+    );
+
+    logger.info('Copied S3 object successfully', { sourceKey, destKey });
+  }
+
+  async tagObject(key: string, tags: Record<string, string>) {
+    logger.info('Tagging S3 object', { key, tags });
+
+    const tagSet = Object.entries(tags).map(([Key, Value]) => ({ Key, Value }));
+
+    await this.client.send(
+      new PutObjectTaggingCommand({
+        Bucket: this.bucketName,
+        Key: key,
+        Tagging: { TagSet: tagSet },
+      })
+    );
+
+    logger.info('Tagged S3 object successfully', { key });
   }
 }
