@@ -91,28 +91,38 @@ export class AppRepository {
     return response.Item as DocumentData;
   }
 
-  async updateDocument(documentId: string, requestBody: { status: string }) {
-    const command = new UpdateCommand({
-      TableName: this.documentsTable,
-      Key: {
-        documentId: documentId,
-      },
-      UpdateExpression: 'set #status = :status',
-      ExpressionAttributeNames: {
-        '#status': 'status',
-      },
-      ExpressionAttributeValues: {
-        ':status': requestBody.status,
-      },
-      ReturnValues: 'ALL_NEW',
-    });
+  async updateDocument(
+    documentId: string,
+    updates: { status: string; purgeAt?: number; deletedAt?: number }
+  ) {
+    let expression = 'set #status = :status';
+    const values: Record<string, string | number> = { ':status': updates.status };
 
-    const response = await this.docClient.send(command);
+    if (updates.purgeAt !== undefined) {
+      expression += ', purgeAt = :purgeAt';
+      values[':purgeAt'] = updates.purgeAt;
+    }
+
+    if (updates.deletedAt !== undefined) {
+      expression += ', deletedAt = :deletedAt';
+      values[':deletedAt'] = updates.deletedAt;
+    }
+
+    const response = await this.docClient.send(
+      new UpdateCommand({
+        TableName: this.documentsTable,
+        Key: { documentId },
+        UpdateExpression: expression,
+        ExpressionAttributeNames: { '#status': 'status' },
+        ExpressionAttributeValues: values,
+        ReturnValues: 'ALL_NEW',
+      })
+    );
 
     if (response.$metadata.httpStatusCode !== 200) {
       logger.error('Failed to update document in DynamoDB', {
         documentId,
-        newStatus: requestBody.status,
+        newStatus: updates.status,
         statusCode: response.$metadata.httpStatusCode,
       });
       throw new Error(`Failed to update document: ${documentId}`);

@@ -15,6 +15,8 @@ export interface DocumentData {
   status: DocumentStatus;
   mimetype: string;
   createdAt?: string;
+  deletedAt?: number;
+  purgeAt?: number;
 }
 
 export interface UsersData {
