@@ -69,11 +69,11 @@ const openapiSpecification = swaggerJsdoc(options);
  *       bearerFormat: JWT
  */
 
-const sseClients: express.Response[] = [];
+const sseClients = new Set<express.Response>();
 
 function broadcastDocumentUpdate(document: DocumentData) {
   logger.info('Broadcasting SSE document update', {
-    clientCount: sseClients.length,
+    clientCount: sseClients.size,
     documentId: document.documentId,
     status: document.status,
   });
@@ -155,20 +155,18 @@ app.get('/api/events', (req, res) => {
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders();
 
-  const heartbeat = setInterval(() => {
-    res.write(': heartbeat\n\n');
-  }, 15000);
+  const heartbeat = setInterval(() => res.write(': heartbeat\n\n'), 15000);
 
-  sseClients.push(res);
+  sseClients.add(res);
 
-  req.on('close', () => {
-    logger.info('SSE client disconnected');
-
+  const cleanUp = () => {
     clearInterval(heartbeat);
+    sseClients.delete(res);
+    logger.info('SSE client disconnected');
+  };
 
-    const index = sseClients.indexOf(res);
-    if (index !== -1) sseClients.splice(index, 1);
-  });
+  req.on('close', cleanUp);
+  res.on('error', cleanUp);
 });
 
 app.get('/health', (req, res) => {
