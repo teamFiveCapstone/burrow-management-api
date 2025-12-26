@@ -159,9 +159,8 @@ app.get('/api/events', (req, res) => {
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders();
-  res.write('data: {"type":"heartbeat"}\n\n');
 
-  const heartbeat = setInterval(() => res.write('data: {"type":"heartbeat"}\n\n'), 15000);
+  const heartbeat = setInterval(() => res.write(': heartbeat\n\n'), 15000);
 
   sseClients.add(res);
 
