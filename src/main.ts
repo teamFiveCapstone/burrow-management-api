@@ -151,12 +151,9 @@ app.get('/api/events', (req, res) => {
   logger.info('SSE client connected');
 
   res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
-  
   res.flushHeaders();
-
-  res.write(': connected\n\n');
 
   const heartbeat = setInterval(() => {
     res.write(': heartbeat\n\n');
