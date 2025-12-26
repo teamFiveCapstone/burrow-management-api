@@ -155,13 +155,13 @@ app.use(authenticateMiddleware);
 app.get('/api/events', (req, res) => {
   logger.info('SSE client connected');
 
-  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders();
 
-  const heartbeat = setInterval(() => res.write(': heartbeat\n\n'), 15000);
+  const heartbeat = setInterval(() => res.write(': heartbeat\n\n'), 10000);
 
   sseClients.add(res);
 
