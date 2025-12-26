@@ -78,8 +78,13 @@ function broadcastDocumentUpdate(document: DocumentData) {
     status: document.status,
   });
 
-  const data = `data: ${JSON.stringify(document)}\n\n`;
-  sseClients.forEach((res) => res.write(data));
+  sseClients.forEach((res) => {
+    try {
+      res.write(`data: ${JSON.stringify(document)}\n\n`);
+    } catch {
+      sseClients.delete(res);
+    }
+  });
 }
 
 // App dependencies
